@@ -1,0 +1,247 @@
+/* src/App.css */
+:root {
+  --primary-color: #2563eb;    /* Blue */
+  --bg-color: #f3f4f6;         /* Light Gray */
+  --card-bg: #ffffff;          /* White */
+  --text-dark: #1f2937;        /* Dark Gray */
+  --text-light: #6b7280;       /* Medium Gray */
+  --border-color: #e5e7eb;     /* Border Gray */
+}
+
+body {
+  background-color: var(--bg-color);
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* --- LAYOUT --- */
+.dashboard-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* --- HEADER --- */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 25px;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  color: #1e3a8a; /* Dark Blue */
+  font-size: 1.8rem;
+}
+
+.dashboard-header p {
+  margin: 5px 0 0 0;
+  color: var(--text-light);
+}
+
+.stats-badge {
+  background-color: #dbeafe;
+  color: #1e40af;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+/* --- FILTERS --- */
+.filter-card {
+  background-color: var(--card-bg);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-end;
+}
+
+.filter-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-group label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: var(--text-light);
+  margin-bottom: 6px;
+}
+
+.filter-group input[type="text"],
+.filter-group input[type="date"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+/* Date Wrapper */
+.date-input-wrapper {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-small {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: none;
+  border-radius: 6px;
+  padding: 0 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-small:hover {
+  background-color: #bfdbfe;
+}
+
+/* Time Wrapper */
+.time-select-wrapper {
+  display: flex;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.time-select-wrapper select {
+  padding: 10px;
+  border: none;
+  background-color: #f9fafb;
+  outline: none;
+  cursor: pointer;
+  border-right: 1px solid var(--border-color);
+}
+
+.time-select-wrapper select:last-child {
+  border-right: none;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+/* Reset Button */
+.filter-actions {
+  min-width: 120px;
+}
+
+.btn-reset {
+  width: 100%;
+  padding: 12px;
+  background-color: #374151;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-reset:hover {
+  background-color: #111827;
+}
+
+/* --- TABLE --- */
+.table-container {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  overflow: hidden; /* rounded corners fix */
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background-color: #f9fafb;
+  border-bottom: 2px solid var(--border-color);
+}
+
+th {
+  text-align: left;
+  padding: 16px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: var(--text-light);
+  font-weight: 700;
+}
+
+td {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+tr:hover {
+  background-color: #f0f9ff; /* Light blue hover */
+}
+
+/* Time Badge */
+.time-badge {
+  background-color: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  color: #374151;
+  font-weight: bold;
+}
+
+
+/* User Info Styles */
+.user-info {
+  display: flex;
+  flex-direction: column; /* <--- CHANGED THIS */
+}
+
+.user-info .name {
+  display: block;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.user-info .rfid {
+  display: block;
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: #9ca3af;
+}
+
+.user-info.registered .name { color: #1e3a8a; }
+.user-info.unknown .name { color: #ef4444; }
+
+/* Status Pills */
+.status-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.status-success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-error {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-light);
+}

@@ -1,0 +1,170 @@
+/* src/App.css */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f3f4f6;
+}
+
+/* --- TOP SWITCHER --- */
+.mode-switch {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: white;
+  padding: 5px;
+  border-radius: 50px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  z-index: 1000;
+}
+
+.mode-switch button {
+  border: none;
+  background: none;
+  padding: 8px 16px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #6b7280;
+}
+
+.mode-switch button.active {
+  background-color: #2563eb;
+  color: white;
+}
+
+/* --- KIOSK STYLES (Student View) --- */
+.kiosk-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  padding: 20px;
+}
+
+.kiosk-card {
+  background: white;
+  width: 100%;
+  max-width: 400px;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.kiosk-header h1 {
+  margin: 0;
+  color: #1e3a8a;
+}
+
+.kiosk-header p {
+  color: #6b7280;
+  margin-top: 5px;
+  margin-bottom: 30px;
+}
+
+.kiosk-step {
+  margin-bottom: 25px;
+  text-align: left;
+}
+
+.kiosk-step label {
+  display: block;
+  font-weight: bold;
+  color: #374151;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kiosk-input {
+  width: 100%;
+  padding: 15px;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  font-size: 1.1rem;
+  box-sizing: border-box;
+  transition: all 0.2s;
+}
+
+.kiosk-input:focus {
+  border-color: #2563eb;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.rfid-box {
+  background-color: #f9fafb;
+  font-family: monospace;
+  color: #4b5563;
+}
+
+.name-box {
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.kiosk-btn {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  background-color: #2563eb;
+  color: white;
+  transition: transform 0.1s;
+}
+
+.kiosk-btn:active {
+  transform: scale(0.98);
+}
+
+.kiosk-btn.success {
+  background-color: #10b981; /* Green */
+}
+
+.kiosk-footer {
+  margin-top: 30px;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+/* --- DASHBOARD STYLES (Admin View) --- */
+/* (Keep your existing Dashboard styles below this line) */
+.dashboard-container { max-width: 1000px; margin: 0 auto; padding: 60px 20px; }
+.dashboard-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; }
+.dashboard-header h1 { margin: 0; color: #1e3a8a; font-size: 1.8rem; }
+.stats-badge { background-color: #dbeafe; color: #1e40af; padding: 8px 16px; border-radius: 8px; font-weight: bold; }
+.filter-card { background-color: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 30px; display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; }
+.filter-group { flex: 1; min-width: 200px; }
+.filter-group label { display: block; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: #6b7280; margin-bottom: 6px; }
+.filter-group input, .filter-group select { width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; box-sizing: border-box; }
+.table-container { background-color: white; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+thead { background-color: #f9fafb; border-bottom: 2px solid #e5e7eb; }
+th { text-align: left; padding: 16px; font-size: 0.8rem; text-transform: uppercase; color: #6b7280; font-weight: 700; }
+td { padding: 16px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
+.time-badge { background-color: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; }
+.status-pill { display: inline-block; padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: bold; }
+.status-success { background-color: #d1fae5; color: #065f46; }
+.status-error { background-color: #fee2e2; color: #991b1b; }
+
+
+.kiosk-btn-secondary {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 2px solid #e5e7eb;
+  color: #6b7280;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.kiosk-btn-secondary:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
