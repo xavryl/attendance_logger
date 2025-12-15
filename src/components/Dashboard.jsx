@@ -1,3 +1,4 @@
+// src/components/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import { db } from "../firebase";
 import { collection, onSnapshot, query } from "firebase/firestore";
@@ -14,15 +15,14 @@ const formatTo12Hour = (militaryTime) => {
   const ampm = h >= 12 ? "PM" : "AM";
   const h12 = h % 12 || 12; 
   
-  // Ensure we always have 2 digits (e.g., 5 becomes "05")
   const hourStr = h12.toString().padStart(2, "0");
   const minStr = m.toString().padStart(2, "0");
 
   return {
     full: `${h12}:${minStr} ${ampm}`,
-    hour: hourStr,    // "08"
-    minute: minStr,   // "05"
-    ampm: ampm        // "PM"
+    hour: hourStr,
+    minute: minStr,
+    ampm: ampm
   };
 };
 
@@ -31,7 +31,7 @@ const Dashboard = () => {
   const [students, setStudents] = useState({});
   
   // --- Filter States ---
-  const [filterText, setFilterText] = useState(""); // Search Name OR RFID
+  const [filterText, setFilterText] = useState("");
   const [filterDate, setFilterDate] = useState("");
   
   // Time Dropdowns
@@ -39,7 +39,7 @@ const Dashboard = () => {
   const [selMin, setSelMin] = useState("");
   const [selAmPm, setSelAmPm] = useState("");
 
-  // 1. Fetch Students (Registry)
+  // 1. Fetch Students
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "students"), (snapshot) => {
       const studentMap = {};
@@ -51,13 +51,12 @@ const Dashboard = () => {
     return () => unsub();
   }, []);
 
-  // 2. Fetch Attendance Logs (History)
+  // 2. Fetch Attendance
   useEffect(() => {
     const q = query(collection(db, "attendance"));
     const unsub = onSnapshot(q, (snapshot) => {
       const fetchedLogs = snapshot.docs.map(doc => {
         const data = doc.data();
-        // Convert time once when fetching
         const timeData = formatTo12Hour(data.time);
         return {
           id: doc.id,
@@ -69,7 +68,6 @@ const Dashboard = () => {
         };
       });
       
-      // Sort: Newest First
       fetchedLogs.sort((a, b) => {
           const timeA = new Date(`${a.date}T${a.time}`);
           const timeB = new Date(`${b.date}T${b.time}`);
@@ -81,19 +79,15 @@ const Dashboard = () => {
     return () => unsub();
   }, []);
 
-  // 3. FILTER LOGIC
+  // 3. Filter Logic
   const filteredLogs = logs.filter((log) => {
-    // A. Text Search (Name OR RFID)
     const studentName = (students[log.rfid] || "").toLowerCase();
     const rfidLower = log.rfid.toLowerCase();
     const searchText = filterText.toLowerCase();
     const matchesText = studentName.includes(searchText) || rfidLower.includes(searchText);
 
-    // B. Date Filter
     const matchesDate = filterDate ? log.date === filterDate : true;
 
-    // C. Time Filters
-    // Only filter if the user has actually selected a value in the dropdown
     const matchesHour = selHour ? log.hourPart === selHour : true;
     const matchesMin  = selMin  ? log.minPart === selMin  : true;
     const matchesAmPm = selAmPm ? log.ampmPart === selAmPm : true;
@@ -101,10 +95,14 @@ const Dashboard = () => {
     return matchesText && matchesDate && matchesHour && matchesMin && matchesAmPm;
   });
 
-  // --- Quick Actions ---
+  // --- UPDATED: Set Today (Manila Time) ---
   const setToday = () => {
-    const today = new Date().toISOString().split('T')[0];
-    setFilterDate(today);
+    const now = new Date();
+    // "en-CA" formats as YYYY-MM-DD. We force the timeZone to Manila.
+    const manilaDate = now.toLocaleDateString("en-CA", {
+      timeZone: "Asia/Manila"
+    });
+    setFilterDate(manilaDate);
   };
 
   const clearFilters = () => {
@@ -117,7 +115,6 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-container">
-      {/* Header */}
       <div className="dashboard-header">
         <div>
           <h1>Attendance Dashboard</h1>
@@ -128,10 +125,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Filter Card */}
       <div className="filter-card">
-        
-        {/* Name/RFID Search */}
         <div className="filter-group">
           <label>Search Name or RFID</label>
           <input 
@@ -142,7 +136,6 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* Date Filter */}
         <div className="filter-group">
           <label>Filter Date</label>
           <div className="date-input-wrapper">
@@ -155,11 +148,9 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Time Filter (3 Parts) */}
         <div className="filter-group">
           <label>Time (12h)</label>
           <div className="time-select-wrapper">
-            {/* Hour */}
             <select value={selHour} onChange={e => setSelHour(e.target.value)}>
               <option value="">Hr</option>
               {Array.from({length: 12}, (_, i) => {
@@ -168,7 +159,6 @@ const Dashboard = () => {
               })}
             </select>
 
-            {/* Minute */}
             <select value={selMin} onChange={e => setSelMin(e.target.value)}>
               <option value="">Min</option>
               {[0,5,10,15,20,25,30,35,40,45,50,55].map(m => {
@@ -177,7 +167,6 @@ const Dashboard = () => {
               })}
             </select>
 
-            {/* AM/PM */}
             <select value={selAmPm} onChange={e => setSelAmPm(e.target.value)}>
               <option value="">--</option>
               <option value="AM">AM</option>
@@ -186,7 +175,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Reset Button */}
         <div className="filter-actions">
           <button onClick={clearFilters} className="btn-reset">
             Reset All
@@ -194,7 +182,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Table */}
       <div className="table-container">
         <table>
           <thead>
