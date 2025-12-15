@@ -5,12 +5,12 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import "../App.css";
 
 const Registration = () => {
-  const [step, setStep] = useState(1); // 1 = Enter RFID, 2 = Enter Name
+  const [step, setStep] = useState(1); // 1 = Input RFID, 2 = Enter Name
   const [rfid, setRfid] = useState("");
   const [name, setName] = useState("");
-  const [status, setStatus] = useState("idle"); // idle, saving, success, error
+  const [status, setStatus] = useState("idle"); // idle, checking, saving, success, error, not-found
 
-  // STEP 1: Check if RFID exists when user clicks "Next"
+  // STEP 1: Check if RFID exists
   const handleCheckRfid = async (e) => {
     e.preventDefault();
     if (!rfid.trim()) return;
@@ -20,14 +20,16 @@ const Registration = () => {
       const docRef = doc(db, "students", rfid.trim());
       const docSnap = await getDoc(docRef);
 
-      if (docSnap.exists() && docSnap.data().name) {
-        setName(docSnap.data().name); // Pre-fill name if found
+      if (docSnap.exists()) {
+        // RFID FOUND -> Proceed to Step 2
+        setName(docSnap.data().name || ""); // Pre-fill name
+        setStatus("idle");
+        setStep(2); 
       } else {
-        setName(""); // Clear name if new
+        // RFID NOT FOUND -> Show Error and Stay on Step 1
+        setStatus("not-found");
       }
       
-      setStatus("idle");
-      setStep(2); // Move to next step
     } catch (error) {
       console.error("Error checking ID:", error);
       setStatus("error");
@@ -48,7 +50,6 @@ const Registration = () => {
 
       setStatus("success");
 
-      // Reset after 1.5 seconds so you can do the next one
       setTimeout(() => {
         setRfid("");
         setName("");
@@ -74,16 +75,16 @@ const Registration = () => {
         {/* --- HEADER --- */}
         <div className="kiosk-header">
           <h1>
-            {step === 1 ? "Step 1: Scan Card" : "Step 2: Enter Name"}
+            {step === 1 ? "Input RFID" : "Step 2: Update Name"}
           </h1>
           <p>
             {step === 1 
-              ? "Type the RFID number or scan the card." 
-              : `Registering details for ID: ${rfid}`}
+              ? "Enter the RFID number to search." 
+              : `Updating details for ID: ${rfid}`}
           </p>
         </div>
 
-        {/* --- FORM STEP 1 (RFID) --- */}
+        {/* --- FORM STEP 1 (Input RFID) --- */}
         {step === 1 && (
           <form onSubmit={handleCheckRfid}>
             <div className="kiosk-step">
@@ -91,14 +92,25 @@ const Registration = () => {
               <input 
                 type="text" 
                 value={rfid}
-                onChange={(e) => setRfid(e.target.value)}
+                onChange={(e) => {
+                  setRfid(e.target.value);
+                  setStatus("idle"); // Clear error when typing
+                }}
                 placeholder="e.g. 917DC622"
-                className="kiosk-input rfid-box"
+                className={`kiosk-input rfid-box ${status === "not-found" ? "input-error" : ""}`}
                 autoFocus
               />
+              
+              {/* Error Message */}
+              {status === "not-found" && (
+                <p style={{ color: "#ef4444", fontWeight: "bold", marginTop: "10px" }}>
+                  ❌ RFID does not exist in the database.
+                </p>
+              )}
             </div>
+
             <button type="submit" className="kiosk-btn">
-              Next ➔
+              {status === "checking" ? "Checking..." : "Next ➔"}
             </button>
           </form>
         )}
@@ -120,7 +132,7 @@ const Registration = () => {
 
             <button type="submit" className={`kiosk-btn ${status}`}>
               {status === "saving" ? "Saving..." : 
-               status === "success" ? "✅ Saved!" : "Save Registration"}
+               status === "success" ? "✅ Saved!" : "Save Changes"}
             </button>
             
             <button 

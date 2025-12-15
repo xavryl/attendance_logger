@@ -79,6 +79,11 @@ body {
   letter-spacing: 0.5px;
 }
 
+.input-error {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2;
+}
+
 .kiosk-input {
   width: 100%;
   padding: 15px;
