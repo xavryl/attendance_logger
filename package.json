@@ -10,7 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
     "firebase": "^12.6.0",
+    "jspdf": "^3.0.4",
+    "jspdf-autotable": "^5.0.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.10.1"

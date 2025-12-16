@@ -1,11 +1,22 @@
 /* src/App.css */
+
+/* =========================================
+   1. GLOBAL & ANIMATIONS
+   ========================================= */
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
   background-color: #f3f4f6;
 }
 
-/* --- TOP SWITCHER --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   2. MODE SWITCHER (Top Right)
+   ========================================= */
 .mode-switch {
   position: absolute;
   top: 10px;
@@ -33,7 +44,9 @@ body {
   color: white;
 }
 
-/* --- KIOSK STYLES (Student View) --- */
+/* =========================================
+   3. KIOSK VIEW (Student)
+   ========================================= */
 .kiosk-container {
   display: flex;
   justify-content: center;
@@ -79,11 +92,6 @@ body {
   letter-spacing: 0.5px;
 }
 
-.input-error {
-  border-color: #ef4444 !important;
-  background-color: #fef2f2;
-}
-
 .kiosk-input {
   width: 100%;
   padding: 15px;
@@ -100,6 +108,18 @@ body {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
+.input-error {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2;
+}
+
+.error-text {
+  color: #ef4444;
+  font-weight: bold;
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
 .rfid-box {
   background-color: #f9fafb;
   font-family: monospace;
@@ -111,6 +131,13 @@ body {
   color: #1f2937;
 }
 
+.kiosk-footer {
+  margin-top: 30px;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+/* Kiosk Buttons */
 .kiosk-btn {
   width: 100%;
   padding: 16px;
@@ -124,40 +151,8 @@ body {
   transition: transform 0.1s;
 }
 
-.kiosk-btn:active {
-  transform: scale(0.98);
-}
-
-.kiosk-btn.success {
-  background-color: #10b981; /* Green */
-}
-
-.kiosk-footer {
-  margin-top: 30px;
-  font-size: 0.8rem;
-  color: #9ca3af;
-}
-
-/* --- DASHBOARD STYLES (Admin View) --- */
-/* (Keep your existing Dashboard styles below this line) */
-.dashboard-container { max-width: 1000px; margin: 0 auto; padding: 60px 20px; }
-.dashboard-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; }
-.dashboard-header h1 { margin: 0; color: #1e3a8a; font-size: 1.8rem; }
-.stats-badge { background-color: #dbeafe; color: #1e40af; padding: 8px 16px; border-radius: 8px; font-weight: bold; }
-.filter-card { background-color: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 30px; display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; }
-.filter-group { flex: 1; min-width: 200px; }
-.filter-group label { display: block; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: #6b7280; margin-bottom: 6px; }
-.filter-group input, .filter-group select { width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; box-sizing: border-box; }
-.table-container { background-color: white; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); overflow: hidden; }
-table { width: 100%; border-collapse: collapse; }
-thead { background-color: #f9fafb; border-bottom: 2px solid #e5e7eb; }
-th { text-align: left; padding: 16px; font-size: 0.8rem; text-transform: uppercase; color: #6b7280; font-weight: 700; }
-td { padding: 16px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
-.time-badge { background-color: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; }
-.status-pill { display: inline-block; padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: bold; }
-.status-success { background-color: #d1fae5; color: #065f46; }
-.status-error { background-color: #fee2e2; color: #991b1b; }
-
+.kiosk-btn:active { transform: scale(0.98); }
+.kiosk-btn.success { background-color: #10b981; }
 
 .kiosk-btn-secondary {
   width: 100%;
@@ -169,7 +164,352 @@ td { padding: 16px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
   font-weight: bold;
   cursor: pointer;
 }
+
 .kiosk-btn-secondary:hover {
   background-color: #f3f4f6;
   color: #374151;
+}
+
+/* =========================================
+   4. DASHBOARD VIEW (Admin)
+   ========================================= */
+.dashboard-container { max-width: 1000px; margin: 0 auto; padding: 60px 20px; }
+
+.dashboard-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: flex-end; 
+  margin-bottom: 25px; 
+}
+
+.dashboard-header h1 { 
+  margin: 0; 
+  color: #1e3a8a; 
+  font-size: 1.8rem; 
+}
+
+/* Filters */
+.filter-card { 
+  background-color: white; 
+  padding: 20px; 
+  border-radius: 12px; 
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+  margin-bottom: 30px; 
+  display: flex; 
+  gap: 20px; 
+  flex-wrap: wrap; 
+  align-items: flex-end; 
+}
+
+.filter-group { flex: 1; min-width: 200px; }
+.filter-group label { display: block; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: #6b7280; margin-bottom: 6px; }
+.filter-group input, .filter-group select { width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; box-sizing: border-box; }
+
+/* Filter Actions */
+.filter-actions button.btn-reset {
+  padding: 10px 16px;
+  background-color: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #4b5563;
+}
+.filter-actions button.btn-reset:hover { background-color: #f3f4f6; }
+
+/* Tables */
+.table-container { background-color: white; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+thead { background-color: #f9fafb; border-bottom: 2px solid #e5e7eb; }
+th { text-align: left; padding: 16px; font-size: 0.8rem; text-transform: uppercase; color: #6b7280; font-weight: 700; }
+td { padding: 16px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
+
+/* Status & Badges */
+.stats-badge { background-color: #dbeafe; color: #1e40af; padding: 8px 16px; border-radius: 8px; font-weight: bold; }
+.time-badge { background-color: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; }
+.status-pill { display: inline-block; padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: bold; }
+.status-success { background-color: #d1fae5; color: #065f46; }
+.status-error { background-color: #fee2e2; color: #991b1b; }
+
+/* Pagination */
+.pagination-controls { display: flex; justify-content: center; align-items: center; padding: 15px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; gap: 20px; }
+.page-info { font-size: 0.9rem; color: #6b7280; }
+.page-btn { padding: 8px 16px; background-color: white; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-weight: 600; color: #374151; }
+.page-btn:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
+.page-btn:hover:not(:disabled) { background-color: #eff6ff; border-color: #2563eb; color: #2563eb; }
+
+/* =========================================
+   5. BUTTONS (Export & Main)
+   ========================================= */
+.export-container { position: relative; display: inline-block; }
+
+.btn-main-export {
+  background-color: #2563eb;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: background 0.2s;
+}
+.btn-main-export:hover { background-color: #1e40af; }
+
+.btn-export {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: opacity 0.2s;
+}
+.btn-export:hover { opacity: 0.9; }
+.btn-export.excel { background-color: #059669; color: white; }
+.btn-export.csv   { background-color: #0284c7; color: white; }
+.btn-export.pdf   { background-color: #dc2626; color: white; }
+
+/* =========================================
+   6. MODAL SYSTEM
+   ========================================= */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.modal-content {
+  background-color: white;
+  width: 450px;
+  max-width: 90%;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.modal-header h2 { margin: 0; font-size: 1.25rem; color: #111827; }
+.close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280; }
+.modal-subtitle { color: #6b7280; font-size: 0.9rem; margin-bottom: 15px; }
+.modal-section { margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+/* Standard Inputs in Modal */
+.modal-search {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  margin-bottom: 5px; /* Reduced to sit closer to dropdown */
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+/* Error Display in Modal */
+.error-display {
+  color: #dc2626;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* =========================================
+   7. CUSTOM DROPDOWN (Latest Feature)
+   ========================================= */
+.custom-dropdown-container {
+  position: relative;
+  width: 100%;
+}
+
+.custom-dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  margin-top: -1px; /* Overlap input border */
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 0.9rem;
+}
+
+.dropdown-item:last-child { border-bottom: none; }
+.dropdown-item:hover { background-color: #f8fafc; }
+.dropdown-item input[type="checkbox"] { margin-right: 10px; width: 16px; height: 16px; }
+.dropdown-item.clickable { justify-content: space-between; }
+.dropdown-empty { padding: 10px; text-align: center; color: #94a3b8; font-size: 0.85rem; }
+
+/* Legacy List Actions (Keep just in case) */
+.date-list-actions { display: flex; justify-content: space-between; font-size: 0.85rem; color: #6b7280; margin-bottom: 8px; }
+.btn-text { background: none; border: none; color: #2563eb; cursor: pointer; padding: 0; font-weight: 600; }
+
+/* =========================================
+   8. TIME RANGE & STEPPER (Latest Feature)
+   ========================================= */
+.time-range-section {
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.time-range-row { display: flex; gap: 20px; justify-content: center; align-items: center; }
+.time-col { display: flex; flex-direction: column; align-items: flex-start; }
+.time-col label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 4px; }
+
+/* Stepper UI */
+.stepper-group { display: flex; align-items: center; gap: 6px; }
+
+.time-stepper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  width: 50px;
+  padding: 2px 0;
+}
+
+.step-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  color: #64748b;
+  padding: 2px;
+  width: 100%;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step-btn:hover { background-color: #f1f5f9; color: #0f172a; }
+
+/* Select Wrapper (Hides default arrow) */
+.select-wrapper { width: 100%; position: relative; display: flex; justify-content: center; }
+
+.stepper-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #334155;
+  text-align: center;
+  cursor: pointer;
+  width: 100%;
+  padding: 2px 0;
+  margin: 0;
+}
+
+.stepper-select:focus { outline: none; background-color: #f8fafc; }
+.stepper-select.text-ampm { font-size: 0.9rem; font-weight: 800; color: #2563eb; }
+
+/* Separator */
+.colon { font-weight: bold; font-size: 1.2rem; color: #94a3b8; margin: 0 2px; }
+
+/* Legacy Selects */
+.modal-select { padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.9rem; }
+.time-select-group { display: flex; align-items: center; gap: 4px; }
+
+/* --- Custom Toggle Switch --- */
+.toggle-switch {
+  width: 50px;
+  height: 26px;
+  background-color: #cbd5e1; /* Gray (Inactive) */
+  border-radius: 50px;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.toggle-switch.active {
+  background-color: #2563eb; /* Blue (Active) */
+}
+
+.toggle-knob {
+  width: 22px;
+  height: 22px;
+  background-color: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  color: #94a3b8; /* Icon color when inactive */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.toggle-switch.active .toggle-knob {
+  transform: translateX(24px); /* Moves the knob right */
+  color: #2563eb; /* Icon color when active */
+}
+
+/* --- Search Mode Buttons --- */
+.search-buttons-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.search-btn {
+  padding: 6px 12px;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.search-btn:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.search-btn.active {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: white;
 }
