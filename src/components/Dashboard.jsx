@@ -31,6 +31,7 @@ const formatDateLabel = (dateStr) => {
 };
 
 const getMinutesFromMidnight = (hourStr, minuteStr, ampm) => {
+  if (!hourStr || !minuteStr || !ampm) return null;
   let h = parseInt(hourStr, 10);
   const m = parseInt(minuteStr, 10);
   if (ampm === "PM" && h !== 12) h += 12;
@@ -39,8 +40,9 @@ const getMinutesFromMidnight = (hourStr, minuteStr, ampm) => {
 };
 
 // --- COMPONENT: Vertical Time Stepper ---
-const TimeStepper = ({ value, options, onChange, type = "number" }) => {
+const TimeStepper = ({ value, options, onChange, type = "number", disabled = false }) => {
   const handleStep = (direction) => {
+    if (disabled) return;
     const currentIndex = options.indexOf(value);
     let newIndex;
     if (direction === 'up') newIndex = (currentIndex + 1) % options.length;
@@ -49,14 +51,14 @@ const TimeStepper = ({ value, options, onChange, type = "number" }) => {
   };
 
   return (
-    <div className="time-stepper">
-      <button className="step-btn" onClick={() => handleStep('up')} type="button" tabIndex="-1">▲</button>
+    <div className={`time-stepper ${disabled ? 'disabled' : ''}`}>
+      <button className="step-btn" onClick={() => handleStep('up')} type="button" tabIndex="-1" disabled={disabled}>▲</button>
       <div className="select-wrapper">
-        <select value={value} onChange={(e) => onChange(e.target.value)} className={`stepper-select ${type === 'ampm' ? 'text-ampm' : ''}`}>
+        <select value={value} onChange={(e) => onChange(e.target.value)} className={`stepper-select ${type === 'ampm' ? 'text-ampm' : ''}`} disabled={disabled}>
           {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
         </select>
       </div>
-      <button className="step-btn" onClick={() => handleStep('down')} type="button" tabIndex="-1">▼</button>
+      <button className="step-btn" onClick={() => handleStep('down')} type="button" tabIndex="-1" disabled={disabled}>▼</button>
     </div>
   );
 };
@@ -68,11 +70,19 @@ const Dashboard = () => {
 
   // --- DASHBOARD FILTERS ---
   const [filterText, setFilterText] = useState("");
-  const [searchMode, setSearchMode] = useState("all"); // 'all', 'firstName', 'lastName'
+  const [searchMode, setSearchMode] = useState("all"); 
   const [filterDate, setFilterDate] = useState(""); 
-  const [selHour, setSelHour] = useState("");
-  const [selMin, setSelMin] = useState("");
-  const [selAmPm, setSelAmPm] = useState("");
+  
+  // Dashboard Time Filter
+  const [dashTimeEnabled, setDashTimeEnabled] = useState(false);
+  const [dashEndTimeEnabled, setDashEndTimeEnabled] = useState(false);
+  const [dashStartHour, setDashStartHour] = useState("08");
+  const [dashStartMin, setDashStartMin]   = useState("00");
+  const [dashStartAmPm, setDashStartAmPm] = useState("AM");
+  const [dashEndHour, setDashEndHour]     = useState("05");
+  const [dashEndMin, setDashEndMin]       = useState("00");
+  const [dashEndAmPm, setDashEndAmPm]     = useState("PM");
+
   const [sortBy, setSortBy] = useState("newest");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
@@ -87,9 +97,9 @@ const Dashboard = () => {
   const [exportNameSearch, setExportNameSearch] = useState("");
   const [selectedStudentRfid, setSelectedStudentRfid] = useState(null); 
   const [showNameDropdown, setShowNameDropdown] = useState(false);
-  const [isTimeFilterEnabled, setIsTimeFilterEnabled] = useState(false);
+  const [isExpTimeEnabled, setIsExpTimeEnabled] = useState(false);
 
-  // Time Filter State
+  // Export Time Filter State
   const [expStartHour, setExpStartHour] = useState("08");
   const [expStartMin, setExpStartMin]   = useState("00");
   const [expStartAmPm, setExpStartAmPm] = useState("AM");
@@ -97,8 +107,10 @@ const Dashboard = () => {
   const [expEndMin, setExpEndMin]       = useState("00");
   const [expEndAmPm, setExpEndAmPm]     = useState("PM");
 
+  // Arrays
   const hoursArr = Array.from({length: 12}, (_, i) => (i+1).toString().padStart(2,'0'));
-  const minsArr = [0,5,10,15,20,25,30,35,40,45,50,55].map(m => m.toString().padStart(2,'0'));
+  // Minutes 00-59
+  const minsArr = Array.from({length: 60}, (_, i) => i.toString().padStart(2,'0'));
   const ampmArr = ["AM", "PM"];
 
   const dateWrapperRef = useRef(null);
@@ -113,48 +125,34 @@ const Dashboard = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // --- 1. HELPER: DYNAMIC NAME FORMATTER ---
+  // 1. DATA FETCH
   const getFormattedName = (student, mode) => {
     if (!student) return "Unregistered";
-    
-    // Check if we have split data
     if (student.firstName && student.lastName) {
-        if (mode === 'firstName') {
-            // Format: First Middle Last
-            return `${student.firstName} ${student.middleName || ""} ${student.lastName}`.replace(/\s+/g, " ").trim();
-        } else {
-            // Format: Last, First Middle (Default for 'all' and 'lastName')
-            return `${student.lastName}, ${student.firstName} ${student.middleName || ""}`.trim();
-        }
+        if (mode === 'firstName') return `${student.firstName} ${student.middleName || ""} ${student.lastName}`.replace(/\s+/g, " ").trim();
+        else return `${student.lastName}, ${student.firstName} ${student.middleName || ""}`.trim();
     }
-    
-    // Fallback for old data
     return student.formatted || "Unknown";
   };
 
-  // --- 2. STUDENT FETCH ---
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "students"), (snapshot) => {
       const studentMap = {};
       const arr = [];
       snapshot.forEach((doc) => {
         const d = doc.data();
-        
-        // Prepare default string for search array
         let defaultStr = "";
         if (d.lastName && d.firstName) {
             defaultStr = `${d.lastName}, ${d.firstName} ${d.middleName || ""}`.trim();
         } else {
             defaultStr = d.name || "";
         }
-
         studentMap[d.rfid] = {
             firstName: d.firstName || "",
             middleName: d.middleName || "",
             lastName: d.lastName || "",
-            formatted: defaultStr // Backup string
+            formatted: defaultStr
         };
-
         if(defaultStr) arr.push({ rfid: d.rfid, name: defaultStr });
       });
       setStudents(studentMap);
@@ -163,7 +161,6 @@ const Dashboard = () => {
     return () => unsub();
   }, []);
 
-  // --- 3. LOGS FETCH ---
   useEffect(() => {
     const q = query(collection(db, "attendance"));
     const unsub = onSnapshot(q, (snapshot) => {
@@ -191,41 +188,44 @@ const Dashboard = () => {
     return () => unsub();
   }, []);
 
-  // --- DASHBOARD FILTER LOGIC ---
+  // --- FILTER LOGIC ---
   const filteredLogs = logs.filter((log) => {
     const student = students[log.rfid];
     const searchText = filterText.toLowerCase();
     const rfidLower = log.rfid.toLowerCase();
 
     let matchesText = false;
-
-    if (!student) {
-        matchesText = rfidLower.includes(searchText);
-    } else {
-        if (searchMode === 'firstName') {
-            matchesText = student.firstName.toLowerCase().includes(searchText);
-        } else if (searchMode === 'lastName') {
-            matchesText = student.lastName.toLowerCase().includes(searchText);
-        } else {
-            matchesText = student.formatted.toLowerCase().includes(searchText) || rfidLower.includes(searchText);
-        }
+    if (!student) matchesText = rfidLower.includes(searchText);
+    else {
+        if (searchMode === 'firstName') matchesText = student.firstName.toLowerCase().includes(searchText);
+        else if (searchMode === 'lastName') matchesText = student.lastName.toLowerCase().includes(searchText);
+        else matchesText = student.formatted.toLowerCase().includes(searchText) || rfidLower.includes(searchText);
     }
 
     const matchesDate = filterDate ? log.date === filterDate : true;
-    const matchesHour = selHour ? log.hourPart === selHour : true;
-    const matchesMin  = selMin  ? log.minPart === selMin  : true;
-    const matchesAmPm = selAmPm ? log.ampmPart === selAmPm : true;
-    
-    return matchesText && matchesDate && matchesHour && matchesMin && matchesAmPm;
+
+    let matchesTime = true;
+    if (dashTimeEnabled) {
+        const logMinutes = (log.rawHour * 60) + log.rawMin;
+        const startMinutes = getMinutesFromMidnight(dashStartHour, dashStartMin, dashStartAmPm);
+        
+        if (dashEndTimeEnabled) {
+            const endMinutes = getMinutesFromMidnight(dashEndHour, dashEndMin, dashEndAmPm);
+            if (startMinutes !== null && endMinutes !== null && startMinutes <= endMinutes) {
+                matchesTime = logMinutes >= startMinutes && logMinutes <= endMinutes;
+            }
+        } else {
+            if (startMinutes !== null) matchesTime = logMinutes >= startMinutes;
+        }
+    }
+    return matchesText && matchesDate && matchesTime;
   });
 
   const sortedDashboardLogs = [...filteredLogs].sort((a, b) => {
     const studentA = students[a.rfid];
     const studentB = students[b.rfid];
-    // We sort based on what is currently displayed (using getFormattedName)
     const nameA = getFormattedName(studentA, searchMode).toLowerCase();
     const nameB = getFormattedName(studentB, searchMode).toLowerCase();
-    
     switch (sortBy) {
       case "name_asc": return nameA.localeCompare(nameB);
       case "name_desc": return nameB.localeCompare(nameA);
@@ -240,53 +240,32 @@ const Dashboard = () => {
   const totalPages = Math.ceil(sortedDashboardLogs.length / itemsPerPage);
   const handlePageChange = (newPage) => { if (newPage >= 1 && newPage <= totalPages) setCurrentPage(newPage); };
 
-  // Export Logic
+  // --- EXPORT LOGIC ---
   const filteredDateList = availableDates.filter(d => formatDateLabel(d).toLowerCase().includes(dateSearchText.toLowerCase()));
   const toggleDateSelection = (dateStr) => {
     if (selectedExportDates.includes(dateStr)) setSelectedExportDates(selectedExportDates.filter(d => d !== dateStr));
     else setSelectedExportDates([...selectedExportDates, dateStr]);
   };
   const filteredStudentsList = studentsArray.filter(s => s.name.toLowerCase().includes(exportNameSearch.toLowerCase()));
-  const handleNameSelect = (student) => {
-    setExportNameSearch(student.name);
-    setSelectedStudentRfid(student.rfid);
-    setShowNameDropdown(false);
-  };
-  const handleNameInputChange = (e) => {
-    setExportNameSearch(e.target.value);
-    setSelectedStudentRfid(null); 
-    setShowNameDropdown(true);
-  };
+  const handleNameSelect = (student) => { setExportNameSearch(student.name); setSelectedStudentRfid(student.rfid); setShowNameDropdown(false); };
+  const handleNameInputChange = (e) => { setExportNameSearch(e.target.value); setSelectedStudentRfid(null); setShowNameDropdown(true); };
 
   const handleExport = async (type) => {
     setExportError("");
+    if (selectedExportDates.length === 0) { setExportError("Please select at least one date."); return; }
 
-    if (selectedExportDates.length === 0) {
-      setExportError("Please select at least one date.");
-      return;
-    }
-
-    let startMinutes = 0;
-    let endMinutes = 1440; 
-
-    if (isTimeFilterEnabled) {
+    let startMinutes = 0, endMinutes = 1440; 
+    if (isExpTimeEnabled) {
         startMinutes = getMinutesFromMidnight(expStartHour, expStartMin, expStartAmPm);
         endMinutes = getMinutesFromMidnight(expEndHour, expEndMin, expEndAmPm);
-
-        if (startMinutes > endMinutes) {
-          setExportError("Start time cannot be after End time.");
-          return;
-        }
+        if (startMinutes > endMinutes) { setExportError("Start time cannot be after End time."); return; }
     }
 
     const exportData = logs.filter(log => {
       if (!selectedExportDates.includes(log.date)) return false;
       const logMinutes = (log.rawHour * 60) + log.rawMin;
       if (logMinutes < startMinutes || logMinutes > endMinutes) return false;
-      
-      if (selectedStudentRfid) {
-        if (log.rfid !== selectedStudentRfid) return false;
-      } 
+      if (selectedStudentRfid) { if (log.rfid !== selectedStudentRfid) return false; } 
       else if (exportNameSearch.trim() !== "") {
         const sName = students[log.rfid] ? students[log.rfid].formatted : "";
         if (!sName.toLowerCase().includes(exportNameSearch.toLowerCase().trim())) return false;
@@ -294,177 +273,170 @@ const Dashboard = () => {
       return true;
     });
 
-    if (exportData.length === 0) {
-      setExportError("No logs found matching your filters.");
-      return;
-    }
-    
+    if (exportData.length === 0) { setExportError("No logs found."); return; }
     exportData.sort((a, b) => b.fullDateObj - a.fullDateObj);
 
-    // Map data using the dynamic formatter
     const mapLogToRow = (log) => {
       const student = students[log.rfid];
-      // Dynamic Name based on Search Mode
       const name = getFormattedName(student, searchMode);
-      
-      // Strict Check for "Missing Info" (Must have First AND Last name in DB to be valid)
       const hasValidInfo = student && student.firstName && student.lastName;
       const status = hasValidInfo ? "Present" : "Missing Info";
-      
       return { date: log.date, time: log.displayTime, rfid: log.rfid, name, status };
     };
 
     if (type === 'excel' || type === 'csv') {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Attendance");
-      worksheet.columns = [
-        { header: "Date", key: "date", width: 15 },
-        { header: "Time", key: "time", width: 15 },
-        { header: "RFID", key: "rfid", width: 20 },
-        { header: "Name", key: "name", width: 30 },
-        { header: "Status", key: "status", width: 20 },
-      ];
+      worksheet.columns = [{header:"Date",key:"date",width:15}, {header:"Time",key:"time",width:15}, {header:"RFID",key:"rfid",width:20}, {header:"Name",key:"name",width:30}, {header:"Status",key:"status",width:20}];
       worksheet.addRows(exportData.map(mapLogToRow));
       worksheet.getRow(1).font = { bold: true };
       const buffer = await workbook.xlsx.writeBuffer();
-      
-      if (type === 'excel') {
-        const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-        saveAs(blob, `attendance_export.xlsx`);
-      } else {
-        const headers = ["Date", "Time", "RFID", "Name", "Status"];
-        const csvRows = exportData.map(log => {
-           const r = mapLogToRow(log);
-           return [r.date, r.time, r.rfid, r.name, r.status];
-        });
-        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...csvRows.map(e => e.join(","))].join("\n");
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `attendance_export.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      saveAs(blob, `attendance_export.${type === 'excel' ? 'xlsx' : 'csv'}`);
     } else if (type === 'pdf') {
         const doc = new jsPDF();
         doc.text("Attendance Report", 14, 20);
         doc.setFontSize(10);
         doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
-        
         let timeRangeStr = "All Day";
-        if(isTimeFilterEnabled) timeRangeStr = `${expStartHour}:${expStartMin} ${expStartAmPm} - ${expEndHour}:${expEndMin} ${expEndAmPm}`;
-
+        if(isExpTimeEnabled) timeRangeStr = `${expStartHour}:${expStartMin} ${expStartAmPm} - ${expEndHour}:${expEndMin} ${expEndAmPm}`;
         doc.text(`Time Range: ${timeRangeStr}`, 14, 35);
         doc.text(`Dates Selected: ${selectedExportDates.length}`, 14, 40);
-        if(exportNameSearch) doc.text(`Name Filter: "${exportNameSearch}"`, 14, 45);
-        
         const tableColumn = ["Date", "Time", "RFID", "Name", "Status"];
-        const tableRows = exportData.map(log => {
-           const r = mapLogToRow(log);
-           return [r.date, r.time, r.rfid, r.name, r.status];
-        });
+        const tableRows = exportData.map(log => { const r = mapLogToRow(log); return [r.date, r.time, r.rfid, r.name, r.status]; });
         autoTable(doc, { startY: 50, head: [tableColumn], body: tableRows });
         doc.save(`attendance_report.pdf`);
     }
-
-    setIsModalOpen(false); 
-    setExportError("");
+    setIsModalOpen(false); setExportError("");
   };
 
   const setToday = () => { setFilterDate(new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" })); setCurrentPage(1); };
-  const clearFilters = () => { setFilterText(""); setSearchMode("all"); setFilterDate(""); setSelHour(""); setSelMin(""); setSelAmPm(""); setSortBy("newest"); setCurrentPage(1); };
+  const clearFilters = () => { 
+      setFilterText(""); setSearchMode("all"); setFilterDate(""); 
+      setDashTimeEnabled(false); setDashEndTimeEnabled(false);
+      setSortBy("newest"); setCurrentPage(1); 
+  };
   const handleFilterChange = (setter, value) => { setter(value); setCurrentPage(1); };
 
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
         <div><h1>Attendance Dashboard</h1><p>Real-time monitoring system</p></div>
-        <div className="export-container">
-           <button onClick={() => { setIsModalOpen(true); setExportError(""); }} className="btn-main-export">📥 Export Data</button>
-        </div>
+        <div className="export-container"><button onClick={() => { setIsModalOpen(true); setExportError(""); }} className="btn-main-export">📥 Export Data</button></div>
       </div>
 
       <div className="filter-card">
-        {/* --- BUTTON FILTER FOR SEARCH --- */}
-        <div className="filter-group" style={{ flex: 1.5 }}>
-            <label>Search Student</label>
+        {/* --- TOP ROW --- */}
+        <div className="filter-top-row">
+            {/* Search */}
+            <div className="filter-group flex-grow">
+                <div className="flex justify-between items-center mb-1">
+                    <label>Search Student</label>
+                    <div className="search-buttons-container">
+                       <button onClick={() => { setSearchMode('all'); setCurrentPage(1); }} className={`search-btn ${searchMode === 'all' ? 'active' : ''}`}>All</button>
+                       <button onClick={() => { setSearchMode('firstName'); setCurrentPage(1); }} className={`search-btn ${searchMode === 'firstName' ? 'active' : ''}`}>First Name</button>
+                       <button onClick={() => { setSearchMode('lastName'); setCurrentPage(1); }} className={`search-btn ${searchMode === 'lastName' ? 'active' : ''}`}>Last Name</button>
+                    </div>
+                </div>
+                <input type="text" placeholder={searchMode === 'all' ? "Name or RFID..." : `Search ${searchMode === 'firstName' ? 'First' : 'Last'} Name...`} value={filterText} onChange={(e) => handleFilterChange(setFilterText, e.target.value)} />
+            </div>
             
-            <div className="search-buttons-container">
-               <button 
-                 onClick={() => { setSearchMode('all'); setCurrentPage(1); }} 
-                 className={`search-btn ${searchMode === 'all' ? 'active' : ''}`}
-               >All</button>
-               <button 
-                 onClick={() => { setSearchMode('firstName'); setCurrentPage(1); }} 
-                 className={`search-btn ${searchMode === 'firstName' ? 'active' : ''}`}
-               >First Name</button>
-               <button 
-                 onClick={() => { setSearchMode('lastName'); setCurrentPage(1); }} 
-                 className={`search-btn ${searchMode === 'lastName' ? 'active' : ''}`}
-               >Last Name</button>
+            {/* Date */}
+            <div className="filter-group date-group">
+                <label>Filter Date</label>
+                <div className="date-input-wrapper">
+                    <button onClick={setToday} className="btn-small">Today</button>
+                    <input type="date" value={filterDate} onChange={(e) => handleFilterChange(setFilterDate, e.target.value)} />
+                </div>
             </div>
 
-            <input 
-              type="text" 
-              placeholder={searchMode === 'all' ? "Name or RFID..." : `Search ${searchMode === 'firstName' ? 'First' : 'Last'} Name...`} 
-              value={filterText} 
-              onChange={(e) => handleFilterChange(setFilterText, e.target.value)} 
-              className="mt-2"
-            />
+            {/* Sort */}
+            <div className="filter-group sort-group">
+                <label>Sort By</label>
+                <select value={sortBy} onChange={e => setSortBy(e.target.value)}><option value="newest">Time (Newest)</option><option value="oldest">Time (Oldest)</option><option value="name_asc">Name (A-Z)</option><option value="name_desc">Name (Z-A)</option></select>
+            </div>
         </div>
+
+        {/* --- MIDDLE ROW (Left-Aligned Time) --- */}
+        <div className="filter-divider"></div>
         
-        <div className="filter-group"><label>Filter Date</label><div className="date-input-wrapper"><button onClick={setToday} className="btn-small">Today</button><input type="date" value={filterDate} onChange={(e) => handleFilterChange(setFilterDate, e.target.value)} /></div></div>
-        
-        <div className="filter-group">
-          <label>Time (12h)</label>
-          <div className="time-select-wrapper">
-            <select value={selHour} onChange={e => handleFilterChange(setSelHour, e.target.value)}><option value="">Hr</option>{Array.from({length: 12}, (_, i) => <option key={i+1} value={(i+1).toString().padStart(2,'0')}>{(i+1).toString().padStart(2,'0')}</option>)}</select>
-            <select value={selMin} onChange={e => handleFilterChange(setSelMin, e.target.value)}><option value="">Min</option>{[0,5,10,15,20,25,30,35,40,45,50,55].map(m => <option key={m} value={m.toString().padStart(2,'0')}>{m.toString().padStart(2,'0')}</option>)}</select>
-            <select value={selAmPm} onChange={e => handleFilterChange(setSelAmPm, e.target.value)}><option value="">--</option><option value="AM">AM</option><option value="PM">PM</option></select>
-          </div>
+        <div className="filter-time-row left-aligned">
+            <div className="time-toggle-main">
+                <label className="mr-3 font-bold text-gray-600">Filter Time</label>
+                <div className={`toggle-switch ${dashTimeEnabled ? 'active' : ''}`} onClick={() => setDashTimeEnabled(!dashTimeEnabled)}>
+                    <div className="toggle-knob">{dashTimeEnabled ? '✓' : '✕'}</div>
+                </div>
+            </div>
+
+            {dashTimeEnabled && (
+                <div className="time-controls-container">
+                    {/* FROM */}
+                    <div className="time-block">
+                        <span className="time-label-small">From</span>
+                        <div className="stepper-group">
+                            <TimeStepper value={dashStartHour} options={hoursArr} onChange={setDashStartHour} />
+                            <span className="colon">:</span>
+                            <TimeStepper value={dashStartMin} options={minsArr} onChange={setDashStartMin} />
+                            <TimeStepper value={dashStartAmPm} options={ampmArr} onChange={setDashStartAmPm} type="ampm" />
+                        </div>
+                    </div>
+
+                    {/* CONNECTOR */}
+                    <div className="time-connector">
+                        <span className="arrow-right">➜</span>
+                        <div className="flex items-center gap-1 mt-1">
+                            <input type="checkbox" checked={dashEndTimeEnabled} onChange={(e) => setDashEndTimeEnabled(e.target.checked)} id="toToggle"/>
+                            <label htmlFor="toToggle" className="text-xs text-gray-500 cursor-pointer">END TIME</label>
+                        </div>
+                    </div>
+
+                    {/* TO */}
+                    <div className={`time-block ${!dashEndTimeEnabled ? 'opacity-50' : ''}`}>
+                        <span className="time-label-small">To</span>
+                        <div className="stepper-group">
+                            <TimeStepper value={dashEndHour} options={hoursArr} onChange={setDashEndHour} disabled={!dashEndTimeEnabled} />
+                            <span className="colon">:</span>
+                            <TimeStepper value={dashEndMin} options={minsArr} onChange={setDashEndMin} disabled={!dashEndTimeEnabled} />
+                            <TimeStepper value={dashEndAmPm} options={ampmArr} onChange={setDashEndAmPm} type="ampm" disabled={!dashEndTimeEnabled} />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
-        <div className="filter-group" style={{ maxWidth: "150px" }}>
-          <label>Sort Results</label>
-          <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="w-full p-2 border rounded"><option value="newest">Time (Newest)</option><option value="oldest">Time (Oldest)</option><option value="name_asc">Name (A-Z)</option><option value="name_desc">Name (Z-A)</option></select>
+
+        {/* --- BOTTOM ROW (Reset) --- */}
+        <div className="filter-bottom-row">
+            <button onClick={clearFilters} className="btn-reset w-full">Reset All Filters</button>
         </div>
-        <div className="filter-actions"><button onClick={clearFilters} className="btn-reset">Reset Filter</button></div>
       </div>
 
+      {/* --- DASHBOARD TABLE (Scrollable Area) --- */}
+      <h3 className="section-title">Attendance Logs</h3>
       <div className="table-container">
-        <table>
-          <thead><tr><th>Date</th><th>Time</th><th>Student Name</th><th>Status</th></tr></thead>
-          <tbody>
-            {currentItems.length > 0 ? currentItems.map((log) => {
-              const student = students[log.rfid];
-              
-              // Dynamic Name Display
-              const displayName = getFormattedName(student, searchMode);
-              
-              // Check if valid info exists in DB
-              const hasValidInfo = student && student.firstName && student.lastName;
+        
+        {/* Table Head (Fixed) and Body (Scrolled) handled by CSS */}
+        <div className="table-scroll-area">
+            <table>
+              <thead><tr><th>Date</th><th>Time</th><th>Student Name</th><th>Status</th></tr></thead>
+              <tbody>
+                {currentItems.length > 0 ? currentItems.map((log) => {
+                  const student = students[log.rfid];
+                  const displayName = getFormattedName(student, searchMode);
+                  const hasValidInfo = student && student.firstName && student.lastName;
+                  return (
+                    <tr key={log.id}>
+                      <td>{log.date}</td>
+                      <td><span className="time-badge">{log.displayTime}</span></td>
+                      <td>{hasValidInfo ? <div className="user-info registered"><span className="name">{displayName}</span><span className="rfid">{log.rfid}</span></div> : <div className="user-info unknown"><span className="name">Unregistered</span><span className="rfid">{log.rfid}</span></div>}</td>
+                      <td><span className={`status-pill ${hasValidInfo ? "status-success" : "status-error"}`}>{hasValidInfo ? "Present" : "Missing Info"}</span></td>
+                    </tr>
+                  );
+                }) : <tr><td colSpan="4" className="empty-state">No logs found.</td></tr>}
+              </tbody>
+            </table>
+        </div>
 
-              return (
-                <tr key={log.id}>
-                  <td>{log.date}</td>
-                  <td><span className="time-badge">{log.displayTime}</span></td>
-                  <td>
-                    {hasValidInfo ? (
-                        <div className="user-info registered"><span className="name">{displayName}</span><span className="rfid">{log.rfid}</span></div>
-                    ) : (
-                        <div className="user-info unknown"><span className="name">Unregistered</span><span className="rfid">{log.rfid}</span></div>
-                    )}
-                  </td>
-                  <td>
-                    <span className={`status-pill ${hasValidInfo ? "status-success" : "status-error"}`}>
-                        {hasValidInfo ? "Present" : "Missing Info"}
-                    </span>
-                  </td>
-                </tr>
-              );
-            }) : <tr><td colSpan="4" className="empty-state">No logs found.</td></tr>}
-          </tbody>
-        </table>
+        {/* Footer (Pagination) - Fixed at Bottom */}
         {sortedDashboardLogs.length > itemsPerPage && (
           <div className="pagination-controls">
             <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="page-btn">Previous</button>
@@ -474,110 +446,16 @@ const Dashboard = () => {
         )}
       </div>
 
+      {/* Export Modal (Included for completeness) */}
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <div className="modal-header">
-              <h2>Select Data to Export</h2>
-              <button onClick={() => setIsModalOpen(false)} className="close-btn">×</button>
-            </div>
-            
-            <div className="modal-section" ref={dateWrapperRef}>
-                <p className="modal-subtitle">1. Select Dates</p>
-                <div className="custom-dropdown-container">
-                  <input 
-                    type="text" 
-                    placeholder={selectedExportDates.length > 0 ? `${selectedExportDates.length} dates selected` : "Search and Select Dates..."} 
-                    value={dateSearchText}
-                    onChange={(e) => setDateSearchText(e.target.value)}
-                    onFocus={() => setShowDateDropdown(true)}
-                    className="modal-search"
-                  />
-                  {showDateDropdown && (
-                    <div className="custom-dropdown-list">
-                      {filteredDateList.length > 0 ? filteredDateList.map(dateStr => (
-                        <label key={dateStr} className="dropdown-item">
-                          <input type="checkbox" checked={selectedExportDates.includes(dateStr)} onChange={() => toggleDateSelection(dateStr)} />
-                          <span>{formatDateLabel(dateStr)}</span>
-                        </label>
-                      )) : <div className="dropdown-empty">No dates found</div>}
-                    </div>
-                  )}
-                </div>
-            </div>
-
-            <div className="modal-section" ref={nameWrapperRef}>
-                <p className="modal-subtitle">2. Filter by Name (Optional)</p>
-                <div className="custom-dropdown-container">
-                  <input 
-                    type="text" 
-                    placeholder="Type name (e.g. Cruz)..." 
-                    value={exportNameSearch}
-                    onChange={handleNameInputChange}
-                    onFocus={() => setShowNameDropdown(true)}
-                    className="modal-search"
-                  />
-                  {showNameDropdown && exportNameSearch && (
-                    <div className="custom-dropdown-list">
-                      {filteredStudentsList.length > 0 ? filteredStudentsList.map(s => (
-                        <div key={s.rfid} className="dropdown-item clickable" onClick={() => handleNameSelect(s)}>
-                          <span className="font-bold">{s.name}</span>
-                          <span className="text-gray-400 text-xs ml-2">({s.rfid})</span>
-                        </div>
-                      )) : <div className="dropdown-empty">No students found</div>}
-                    </div>
-                  )}
-                </div>
-            </div>
-
-            <div className="modal-section time-range-section">
-                <div className="flex items-center gap-3 mb-3" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                   <p className="modal-subtitle" style={{ margin: 0 }}>3. Filter by Specific Time?</p>
-                   <div 
-                     className={`toggle-switch ${isTimeFilterEnabled ? 'active' : ''}`} 
-                     onClick={() => setIsTimeFilterEnabled(!isTimeFilterEnabled)}
-                   >
-                     <div className="toggle-knob">
-                       {isTimeFilterEnabled ? '✓' : '✕'}
-                     </div>
-                   </div>
-                </div>
-
-                {isTimeFilterEnabled ? (
-                  <div className="time-range-row">
-                      <div className="time-col">
-                          <label>From:</label>
-                          <div className="stepper-group">
-                             <TimeStepper value={expStartHour} options={hoursArr} onChange={setExpStartHour} />
-                             <span className="colon">:</span>
-                             <TimeStepper value={expStartMin} options={minsArr} onChange={setExpStartMin} />
-                             <TimeStepper value={expStartAmPm} options={ampmArr} onChange={setExpStartAmPm} type="ampm" />
-                          </div>
-                      </div>
-                      <div className="time-col">
-                          <label>To:</label>
-                          <div className="stepper-group">
-                             <TimeStepper value={expEndHour} options={hoursArr} onChange={setExpEndHour} />
-                             <span className="colon">:</span>
-                             <TimeStepper value={expEndMin} options={minsArr} onChange={setExpEndMin} />
-                             <TimeStepper value={expEndAmPm} options={ampmArr} onChange={setExpEndAmPm} type="ampm" />
-                          </div>
-                      </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500 italic" style={{ fontSize: '0.85rem', color: '#6b7280' }}>
-                    Downloads data for the entire day (All Hours).
-                  </p>
-                )}
-            </div>
-
+            <div className="modal-header"><h2>Select Data to Export</h2><button onClick={() => setIsModalOpen(false)} className="close-btn">×</button></div>
+            <div className="modal-section" ref={dateWrapperRef}><p className="modal-subtitle">1. Select Dates</p><div className="custom-dropdown-container"><input type="text" placeholder={selectedExportDates.length > 0 ? `${selectedExportDates.length} dates selected` : "Search Dates..."} value={dateSearchText} onChange={(e) => setDateSearchText(e.target.value)} onFocus={() => setShowDateDropdown(true)} className="modal-search" />{showDateDropdown && (<div className="custom-dropdown-list">{filteredDateList.length > 0 ? filteredDateList.map(dateStr => (<label key={dateStr} className="dropdown-item"><input type="checkbox" checked={selectedExportDates.includes(dateStr)} onChange={() => toggleDateSelection(dateStr)} /><span>{formatDateLabel(dateStr)}</span></label>)) : <div className="dropdown-empty">No dates found</div>}</div>)}</div></div>
+            <div className="modal-section" ref={nameWrapperRef}><p className="modal-subtitle">2. Filter by Name (Optional)</p><div className="custom-dropdown-container"><input type="text" placeholder="Type name (e.g. Cruz)..." value={exportNameSearch} onChange={handleNameInputChange} onFocus={() => setShowNameDropdown(true)} className="modal-search" />{showNameDropdown && exportNameSearch && (<div className="custom-dropdown-list">{filteredStudentsList.length > 0 ? filteredStudentsList.map(s => (<div key={s.rfid} className="dropdown-item clickable" onClick={() => handleNameSelect(s)}><span className="font-bold">{s.name}</span><span className="text-gray-400 text-xs ml-2">({s.rfid})</span></div>)) : <div className="dropdown-empty">No students found</div>}</div>)}</div></div>
+            <div className="modal-section time-range-section"><div className="flex items-center gap-3 mb-3" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}><p className="modal-subtitle" style={{ margin: 0 }}>3. Filter by Specific Time?</p><div className={`toggle-switch ${isExpTimeEnabled ? 'active' : ''}`} onClick={() => setIsExpTimeEnabled(!isExpTimeEnabled)}><div className="toggle-knob">{isExpTimeEnabled ? '✓' : '✕'}</div></div></div>{isExpTimeEnabled ? (<div className="time-range-row"><div className="time-col"><label>From:</label><div className="stepper-group"><TimeStepper value={expStartHour} options={hoursArr} onChange={setExpStartHour} /><span className="colon">:</span><TimeStepper value={expStartMin} options={minsArr} onChange={setExpStartMin} /><TimeStepper value={expStartAmPm} options={ampmArr} onChange={setExpStartAmPm} type="ampm" /></div></div><div className="time-col"><label>To:</label><div className="stepper-group"><TimeStepper value={expEndHour} options={hoursArr} onChange={setExpEndHour} /><span className="colon">:</span><TimeStepper value={expEndMin} options={minsArr} onChange={setExpEndMin} /><TimeStepper value={expEndAmPm} options={ampmArr} onChange={setExpEndAmPm} type="ampm" /></div></div></div>) : (<p className="text-sm text-gray-500 italic" style={{ fontSize: '0.85rem', color: '#6b7280' }}>Downloads entire day (All Hours).</p>)}</div>
             {exportError && <div className="error-display">⚠️ {exportError}</div>}
-
-            <div className="modal-actions">
-              <button onClick={() => handleExport('excel')} className="btn-export excel">Download Excel</button>
-              <button onClick={() => handleExport('csv')} className="btn-export csv">Download CSV</button>
-              <button onClick={() => handleExport('pdf')} className="btn-export pdf">Download PDF</button>
-            </div>
+            <div className="modal-actions"><button onClick={() => handleExport('excel')} className="btn-export excel">Download Excel</button><button onClick={() => handleExport('csv')} className="btn-export csv">Download CSV</button><button onClick={() => handleExport('pdf')} className="btn-export pdf">Download PDF</button></div>
           </div>
         </div>
       )}
